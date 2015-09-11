@@ -5,7 +5,13 @@
     "url": "http://tomasz.janczuk.org",
     "twitter": "tjanczuk"
   },
-  "version": "0.10.2-pre",
+  "contributors": [
+  	{
+      "name": "Doru Ungureanu",
+      "email": "dungureanu@gmail.com"
+    }
+  ],
+  "version": "0.10.3",
   "description": "Edge.js: run .NET and Node.js in-process on Windows, Mac OS, and Linux",
   "tags": [
     "owin",
@@ -29,7 +35,7 @@
   ],
   "dependencies": {
     "edge-cs": "0.2.7",
-    "nan": "^1.6.2"
+    "nan": "^2.0.8"
   },
   "devDependencies": {
     "mocha": "1.8.1",
