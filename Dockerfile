@@ -1,37 +1,25 @@
 #
 # Edge.js Dockerfile
+# Debian with Node.js, Edge.js, Mono, CoreCLR
 #
 
-# Pull base Ubuntu 14.04 image with Node 0.10.30.
-FROM node:0.10.30
-
-# Install Mono.
-# See https://github.com/tjanczuk/edge/blob/master/tools/ubuntu_12.04_clean_install.sh for context
-ENV MONO_VERSION 3.4.0
-RUN \
-  apt-get update && \
-  apt-get install -y pkg-config libgdiplus wget && \
-  cd /tmp && \
-  wget http://download.mono-project.com/sources/mono/mono-$MONO_VERSION.tar.bz2 && \
-  tar -xvf mono-$MONO_VERSION.tar.bz2 && \
-  rm -f mono-$MONO_VERSION.tar.bz2 && \
-  wget https://raw.githubusercontent.com/tjanczuk/edge/master/tools/Microsoft.Portable.Common.targets \
-    -O ./mono-$MONO_VERSION/mcs/tools/xbuild/targets/Microsoft.Portable.Common.targets && \
-  cd mono-$MONO_VERSION && \
-  sed -i "s/\@prefix\@\/lib\///g" ./data/config.in && \
-  ./configure --prefix=/usr/local --with-glib=embedded --enable-nls=no && \
-  make && \
-  make install && \
-  ldconfig && \
-  cd /tmp && \
-  rm -rf mono-$MONO_VERSION
-
-# Install Edge.js.
-ENV NODE_PATH /usr/local/lib/node_modules
+FROM nodesource/trusty:6.3.0
 WORKDIR /data
-RUN npm install -g edge
 ADD ./samples /data/samples
-RUN sed -i "s/..\/lib\/edge/edge/g" /data/samples/*.js
-
-# Define default command to run.
-CMD [ "bash", "-c", "echo Welcome to Edge.js && echo Samples are in /data/samples && echo Documentation is at https://github.com/tjanczuk/edge && bash" ]
+RUN bash -c ' \
+  set -eux && \
+  sed -i "s/..\/lib\/edge/edge/g" /data/samples/*.js && \
+  \
+  echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ trusty main" > /etc/apt/sources.list.d/dotnetdev.list && \
+  apt-key adv --keyserver apt-mo.trafficmanager.net --recv-keys 417A0893 && \
+  apt-get -y update && \
+  apt-get -y install dotnet-dev-1.0.0-preview2-003121 && \
+  \
+  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF && \
+  echo "deb http://download.mono-project.com/repo/debian wheezy/snapshots/4.2.4 main" | tee /etc/apt/sources.list.d/mono-xamarin.list && \
+  apt-get -y update && \
+  apt-get -y install curl g++ pkg-config libgdiplus libunwind8 libssl-dev make mono-complete gettext libssl-dev libcurl4-openssl-dev zlib1g libicu-dev uuid-dev unzip && \
+  \
+  npm i tjanczuk/edge && \
+  npm cache clean'
+CMD [ "bash", "-c", "echo Welcome to Edge.js && echo Samples are in /data/samples && echo Documentation is at https://github.com/tjanczuk/edge && echo Use EDGE_USE_CORECLR=1 environment variable to select CoreCLR, otherwise Mono is used && bash" ]

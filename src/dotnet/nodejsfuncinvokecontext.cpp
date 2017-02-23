@@ -20,7 +20,7 @@ NAN_METHOD(v8FuncCallback)
 {
     DBG("v8FuncCallback");
     Nan::HandleScope scope;
-    Handle<v8::External> correlator = Handle<v8::External>::Cast(info[2]);
+    v8::Local<v8::External> correlator = v8::Local<v8::External>::Cast(info[2]);
     NodejsFuncInvokeContextWrap* wrap = (NodejsFuncInvokeContextWrap*)(correlator->Value());
     NodejsFuncInvokeContext^ context = wrap->context;    
     wrap->context = nullptr;
@@ -34,7 +34,7 @@ NAN_METHOD(v8FuncCallback)
         DBG("v8FuncCallback success");
         context->CompleteWithResult(info[1]);
     }
-    info.GetReturnValue().Set(Nan::Undefined());
+    info.GetReturnValue().SetUndefined();
 }
 
 NodejsFuncInvokeContext::NodejsFuncInvokeContext(
@@ -66,34 +66,34 @@ void NodejsFuncInvokeContext::CallFuncOnV8Thread()
 {
     DBG("NodejsFuncInvokeContext::CallFuncOnV8Thread");
 
-    static Persistent<v8::Function> callbackFactory;
-    static Persistent<v8::Function> callbackFunction;
+    static Nan::Persistent<v8::Function> callbackFactory;
+    static Nan::Persistent<v8::Function> callbackFunction;
 
     Nan::HandleScope scope;
     try 
     {
-        Handle<v8::Value> jspayload = ClrFunc::MarshalCLRToV8(this->payload);
+        v8::Local<v8::Value> jspayload = ClrFunc::MarshalCLRToV8(this->payload);
 
         // See https://github.com/tjanczuk/edge/issues/125 for context
         
         if (callbackFactory.IsEmpty())
         {
-			Local<Function> v8FuncCallbackFunction = Nan::New<FunctionTemplate>(v8FuncCallback)->GetFunction();
-			callbackFunction.Reset(v8FuncCallbackFunction->GetIsolate(), v8FuncCallbackFunction);
-			Handle<v8::String> code = Nan::New<v8::String>(
-				"(function (cb, ctx) { return function (e, d) { return cb(e, d, ctx); }; })").ToLocalChecked();
-			Local<Function> callbackFactoryFunction = Handle<v8::Function>::Cast(v8::Script::Compile(code)->Run());
-			callbackFactory.Reset(callbackFactoryFunction->GetIsolate(), callbackFactoryFunction);
+            v8::Local<v8::Function> v8FuncCallbackFunction = Nan::New<v8::FunctionTemplate>(v8FuncCallback)->GetFunction();
+            callbackFunction.Reset(v8FuncCallbackFunction);
+            v8::Local<v8::String> code = Nan::New<v8::String>(
+                "(function (cb, ctx) { return function (e, d) { return cb(e, d, ctx); }; })").ToLocalChecked();
+            v8::Local<v8::Function> callbackFactoryFunction = v8::Local<v8::Function>::Cast(v8::Script::Compile(code)->Run());
+            callbackFactory.Reset(callbackFactoryFunction);            
         }
 
         this->wrap = new NodejsFuncInvokeContextWrap;
         this->wrap->context = this;
-        Handle<v8::Value> factoryArgv[] = { Nan::New(callbackFunction), Nan::New<v8::External>((void*)this->wrap) };
-        Handle<v8::Function> callback = Handle<v8::Function>::Cast(
+        v8::Local<v8::Value> factoryArgv[] = { Nan::New(callbackFunction), Nan::New<v8::External>((void*)this->wrap) };
+        v8::Local<v8::Function> callback = v8::Local<v8::Function>::Cast(
             Nan::New(callbackFactory)->Call(Nan::GetCurrentContext()->Global(), 2, factoryArgv));        
 
-        Handle<v8::Value> argv[] = { jspayload, callback };
-        TryCatch tryCatch;
+        v8::Local<v8::Value> argv[] = { jspayload, callback };
+        Nan::TryCatch tryCatch;
         DBG("NodejsFuncInvokeContext::CallFuncOnV8Thread calling JavaScript function");
         Nan::New(*(this->functionContext->Func))->Call(Nan::GetCurrentContext()->Global(), 2, argv);
         DBG("NodejsFuncInvokeContext::CallFuncOnV8Thread called JavaScript function");
@@ -130,7 +130,7 @@ void NodejsFuncInvokeContext::CompleteWithError(System::Exception^ exception)
     Task::Run(gcnew System::Action(this, &NodejsFuncInvokeContext::Complete));
 }
 
-void NodejsFuncInvokeContext::CompleteWithResult(Handle<v8::Value> result)
+void NodejsFuncInvokeContext::CompleteWithResult(v8::Local<v8::Value> result)
 {
     DBG("NodejsFuncInvokeContext::CompleteWithResult");
     try 

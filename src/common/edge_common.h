@@ -6,6 +6,8 @@
 #include <node_buffer.h>
 #include <uv.h>
 #include <nan.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 using namespace v8;
 
@@ -30,7 +32,7 @@ using namespace v8;
 #define EDGE_PLATFORM_NIX 1
 #endif
 
-#ifdef EDGE_PLATFORM_NIX
+#ifndef EDGE_PLATFORM_WINDOWS
 #include <stdlib.h>
 #include <string.h>
 #define __cdecl
@@ -58,8 +60,9 @@ typedef int BOOL;
 
 extern BOOL debugMode;
 extern BOOL enableScriptIgnoreAttribute;
+extern BOOL enableMarshalEnumAsInt;
 
-#define DBG(msg) if (debugMode) printf(msg "\n");
+#define DBG(...) if (debugMode) { printf(__VA_ARGS__); printf("\n"); }
 
 typedef void (*uv_async_edge_cb)(void* data);
 
@@ -98,5 +101,22 @@ public:
     static void CancelAction(uv_edge_async_t* uv_edge_async);
     static void Unref(uv_edge_async_t* uv_edge_async);
 };
+
+typedef enum taskStatus
+{
+    TaskStatusCreated = 0,
+    TaskStatusWaitingForActivation = 1,
+    TaskStatusWaitingToRun = 2,
+    TaskStatusRunning = 3,
+    TaskStatusWaitingForChildrenToComplete = 4,
+    TaskStatusRanToCompletion = 5,
+    TaskStatusCanceled = 6,
+    TaskStatusFaulted = 7
+} TaskStatus;
+
+v8::Local<Value> throwV8Exception(v8::Local<Value> exception);
+v8::Local<Value> throwV8Exception(const char* format, ...);
+
+bool HasEnvironmentVariable(const char* variableName);
 
 #endif

@@ -11,13 +11,14 @@
       "email": "dungureanu@gmail.com"
     }
   ],
-  "version": "0.10.3",
+  "version": "7.0.0-pre",
   "description": "Edge.js: run .NET and Node.js in-process on Windows, Mac OS, and Linux",
   "tags": [
     "owin",
     "edge",
     "net",
     "clr",
+    "coreclr",
     "c#",
     "mono",
     "managed",
@@ -34,11 +35,11 @@
     }
   ],
   "dependencies": {
-    "edge-cs": "0.2.7",
-    "nan": "^2.0.8"
+    "edge-cs": "1.2.1",
+    "nan": "^2.0.9"
   },
   "devDependencies": {
-    "mocha": "1.8.1",
+    "mocha": "2.5.3",
     "jshint": "1.1.0"
   },
   "homepage": "https://github.com/tjanczuk/edge",
